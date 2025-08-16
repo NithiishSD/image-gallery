@@ -1,0 +1,106 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <link rel="stylesheet" href="/css/styles.css" />
+    <title>Arceus Gallery</title>
+</head>
+<body>
+    <header>
+       
+        <section class="top-bar">
+            <div class="logo">
+                <a href="/"><img src="/assets/logo.png" alt="Arceus Gallery Logo" /></a>
+            </div>
+            <div class="search-container">
+        <form class="search-form" id="searchForm">
+            <input
+                type="search"
+                placeholder="Find your inspiration…"
+                name="search"
+                aria-label="Search images"
+                required
+                id="searchInput"
+                autocomplete="off"
+            />
+            <button type="submit">Search</button>
+        </form>
+    </div>
+          
+
+            <nav class="nav-links" aria-label="Primary Navigation">
+                <ul>
+                    
+                    <li><button type="button">Home</button></li>
+                    <li><button type="button">Collections</button></li>
+                    <li><button type="button">Sign Up</button></li>
+                    <li><button type="button">Log In</button></li>
+                </ul>
+            </nav>
+        </section>
+         <section class="hero-video">
+                    <video autoplay loop muted playsinline class="hero-bg-video">
+                     <source src="/assets/hero-animation.mp4" type="video/mp4" playsinline />
+                         <!-- You can add WebM/OGG sources for better compatibility -->
+                    Your browser does not support the video tag.
+                    </video>
+            <div class="hero-text">
+                <h1>Welcome to Arceus Gallery</h1>
+                <p>Your source for stunning digital art and photography.</p>
+            </div>
+        </section>
+          <div class="theme-suggestions-wrapper">
+        <span>Trail of Inspiration:</span> 
+        <div class="scroll-region">
+            <section class="theme-suggestions">
+                <span>Nature</span>
+                <span>Abstract</span>
+                <span>Portrait</span>
+                <span>Cityscape</span>
+                <span>Travel</span>
+                <span>Food</span>
+                <span>Architecture</span>
+                <span>Wildlife</span>
+                <span>Sunset</span>
+                <span>Ocean</span>
+            </section>
+        </div>
+    </div>
+        
+    </header>
+    <section class="image_suggestion">
+        <button class="suggestion-button" type="button">trending</button>
+        <button class="suggestion-button" type="button">popular</button>
+        <button class="suggestion-button" type="button">featured</button>
+        <button class="suggestion-button" type="button">recommended</button>
+        <button class="suggestion-button" type="button">top rated</button>
+        <button class="suggestion-button" type="button">latest</button>
+        
+
+    </section>
+    <main>
+        <section class="gallery">
+            <!-- Gallery images will be loaded here -->
+        </section>
+    <div id="lightbox" class="lightbox" hidden>
+        <button id="close-lightbox" aria-label="Close">&times;</button>
+        <img id="lightbox-img" alt="" />
+        <p id="lightbox-caption"></p>
+  </div>
+    </main>
+    <footer>
+        <section class="footer-content">
+            <p>&copy; 2023 Arceus Gallery. All rights reserved.</p>
+            <nav class="footer-links" aria-label="Footer Navigation">
+                <ul>
+                    <li><a href="#">Privacy Policy</a></li>
+                    <li><a href="#">Terms of Service</a></li>
+                    <li><a href="#">Contact Us</a></li>
+                </ul>
+            </nav>
+        </section>
+    </footer>
+    <script src="/js/gallery.js"></script>
+</body>
+</html>
