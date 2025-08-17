@@ -1,28 +1,32 @@
-
-// Modified JavaScript with enhanced ash effect integration and debugging
-const UNSPLASH_ACCESS_KEY = 'GidKijc13BRZnzT3ZhNVXz1GVv5ER9IM147T5DoYTmk';
+// Unsplash API Configuration
+const UNSPLASH_ACCESS_KEY = 'YOUR_UNSPLASH_ACCESS_KEY'; // Replace with your actual API key
 const UNSPLASH_API_URL = 'https://api.unsplash.com';
 
+// DOM Elements
 const searchForm = document.getElementById('searchForm');
 const searchInput = document.getElementById('searchInput');
 const gallerySection = document.querySelector('.gallery');
 const suggestionButtons = document.querySelectorAll('.suggestion-button');
 const themeSuggestions = document.querySelectorAll('.theme-suggestions span[data-query]');
 
+// State management
 let currentPage = 1;
 let currentQuery = '';
 let currentImages = [];
 let currentImageIndex = 0;
 let isLoading = false;
 
+// Initialize the gallery
 document.addEventListener('DOMContentLoaded', function() {
-    console.log('Initializing gallery with ash effect');
+    // Load featured images on page load
     loadFeaturedImages();
     
+    // Add search form event listener
     if (searchForm) {
         searchForm.addEventListener('submit', handleSearch);
     }
     
+    // Add suggestion button listeners
     suggestionButtons.forEach(button => {
         button.addEventListener('click', () => {
             const query = button.getAttribute('data-query');
@@ -30,6 +34,7 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     });
     
+    // Add theme suggestion listeners
     themeSuggestions.forEach(span => {
         span.addEventListener('click', () => {
             const query = span.getAttribute('data-query');
@@ -37,70 +42,14 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     });
     
+    // Add infinite scroll
     window.addEventListener('scroll', handleScroll);
     
+    // Add keyboard shortcuts
     document.addEventListener('keydown', handleKeyboard);
-    
-    setupSearchSuggestions();
 });
 
-function setupSearchSuggestions() {
-    if (!searchInput) return;
-    
-    const suggestionsContainer = document.createElement('div');
-    suggestionsContainer.className = 'search-suggestions';
-    suggestionsContainer.style.display = 'none';
-    searchInput.parentNode.appendChild(suggestionsContainer);
-    
-    const commonSearches = [
-        'nature', 'landscape', 'city', 'mountains', 'ocean', 'forest', 'sunset', 
-        'architecture', 'travel', 'animals', 'flowers', 'abstract', 'minimal',
-        'technology', 'food', 'coffee', 'workspace', 'business', 'people'
-    ];
-    
-    searchInput.addEventListener('focus', () => {
-        if (searchInput.value.trim() === '') {
-            showSuggestions(commonSearches, suggestionsContainer);
-        }
-    });
-    
-    searchInput.addEventListener('input', (e) => {
-        const value = e.target.value.trim();
-        if (value.length > 0) {
-            const filtered = commonSearches.filter(term => 
-                term.toLowerCase().includes(value.toLowerCase())
-            );
-            showSuggestions(filtered.slice(0, 6), suggestionsContainer);
-        } else {
-            showSuggestions(commonSearches, suggestionsContainer);
-        }
-    });
-    
-    searchInput.addEventListener('blur', (e) => {
-        setTimeout(() => {
-            suggestionsContainer.style.display = 'none';
-        }, 200);
-    });
-}
-
-function showSuggestions(suggestions, container) {
-    if (suggestions.length === 0) {
-        container.style.display = 'none';
-        return;
-    }
-    
-    container.innerHTML = suggestions.map(suggestion => 
-        `<div class="suggestion-item" onclick="selectSuggestion('${suggestion}')">${suggestion}</div>`
-    ).join('');
-    container.style.display = 'block';
-}
-
-function selectSuggestion(suggestion) {
-    searchInput.value = suggestion;
-    performSearch(suggestion);
-    document.querySelector('.search-suggestions').style.display = 'none';
-}
-
+// Handle search form submission
 function handleSearch(event) {
     event.preventDefault();
     const query = searchInput.value.trim();
@@ -108,57 +57,26 @@ function handleSearch(event) {
     performSearch(query);
 }
 
+// Unified search function
 function performSearch(query) {
     currentQuery = query;
     currentPage = 1;
     currentImages = [];
     
+    // Update search input
     searchInput.value = query;
     
-    const suggestions = document.querySelector('.search-suggestions');
-    if (suggestions) suggestions.style.display = 'none';
-    
+    // Clear existing gallery
     clearGallery();
     
-    showSkeletonGrid();
+    // Show loading state
+    showLoading();
     
-    setTimeout(() => {
-        gallerySection.scrollIntoView({ 
-            behavior: 'smooth',
-            block: 'start'
-        });
-    }, 100);
-    
+    // Search for images
     searchImages(query, currentPage);
 }
 
-function showSkeletonGrid() {
-    const gallery = getOrCreateGallery();
-    gallery.innerHTML = '';
-    
-    for (let i = 0; i < 20; i++) {
-        const skeletonItem = document.createElement('div');
-        skeletonItem.className = 'gallery-item skeleton-item';
-        
-        const heights = [200, 250, 300, 350, 400, 180, 220];
-        const randomHeight = heights[Math.floor(Math.random() * heights.length)];
-        
-        skeletonItem.innerHTML = `
-            <div class="skeleton-wrapper" style="height: ${randomHeight}px;">
-                <div class="skeleton-shimmer">
-                    <div class="skeleton-content"></div>
-                </div>
-            </div>
-        `;
-        
-        gallery.appendChild(skeletonItem);
-        
-        setTimeout(() => {
-            skeletonItem.classList.add('skeleton-animate');
-        }, i * 50);
-    }
-}
-
+// Search images from Unsplash
 async function searchImages(query, page = 1) {
     if (isLoading) return;
     
@@ -179,6 +97,8 @@ async function searchImages(query, page = 1) {
         }
         
         const data = await response.json();
+        
+        hideLoading();
         
         if (data.results && data.results.length > 0) {
             if (page === 1) {
@@ -201,17 +121,19 @@ async function searchImages(query, page = 1) {
         
     } catch (error) {
         console.error('Error fetching images:', error);
+        hideLoading();
         showError('Failed to load images. Please try again.');
     } finally {
         isLoading = false;
     }
 }
 
+// Load featured images for initial page load
 async function loadFeaturedImages() {
     if (isLoading) return;
     
     isLoading = true;
-    showSkeletonGrid();
+    showLoading();
     
     try {
         const response = await fetch(
@@ -229,16 +151,19 @@ async function loadFeaturedImages() {
         
         const data = await response.json();
         currentImages = [...data];
+        hideLoading();
         displayImages(data, true);
         
     } catch (error) {
         console.error('Error fetching featured images:', error);
+        hideLoading();
         showError('Failed to load images. Please try again.');
     } finally {
         isLoading = false;
     }
 }
 
+// Show search results header
 function showSearchResults(query, totalResults) {
     const resultsHeader = document.createElement('div');
     resultsHeader.className = 'search-results-header';
@@ -247,181 +172,130 @@ function showSearchResults(query, totalResults) {
         <p>${totalResults.toLocaleString()} images found</p>
     `;
     
+    // Remove existing header
     const existingHeader = document.querySelector('.search-results-header');
     if (existingHeader) {
         existingHeader.remove();
     }
     
+    // Insert before gallery
     gallerySection.parentNode.insertBefore(resultsHeader, gallerySection);
 }
 
+// Display images in masonry layout
 function displayImages(images, clearExisting = false) {
     const gallery = getOrCreateGallery();
     
     if (clearExisting) {
-        const skeletonItems = gallery.querySelectorAll('.skeleton-item');
-        skeletonItems.forEach((item, index) => {
-            setTimeout(() => {
-                item.style.opacity = '0';
-                item.style.transform = 'scale(0.9)';
-                setTimeout(() => {
-                    if (item.parentNode) item.parentNode.removeChild(item);
-                }, 300);
-            }, index * 20);
-        });
-        
-        setTimeout(() => {
-            console.log('Clearing gallery and rendering new images with ash effect');
-            gallery.innerHTML = '';
-            renderImages(images);
-        }, skeletonItems.length * 20 + 400); // Increased delay to ensure skeleton clears
-    } else {
-        renderImages(images);
+        gallery.innerHTML = '';
     }
-}
-
-function renderImages(images) {
-    const gallery = getOrCreateGallery();
     
     images.forEach((image, index) => {
         const imageElement = createImageElement(image, currentImages.length - images.length + index);
         gallery.appendChild(imageElement);
-        
-        setTimeout(() => {
-            imageElement.classList.add('image-loaded');
-            console.log(`Image ${index} added with ash-loading class`);
-        }, index * 100);
-        
-        setupImageObserver(imageElement);
     });
 }
 
+// Create image element for masonry grid
 function createImageElement(image, globalIndex) {
     const imageContainer = document.createElement('div');
-    imageContainer.className = 'gallery-item image-loading';
+    imageContainer.className = 'gallery-item';
     
+    // Calculate dynamic height based on image aspect ratio
     const aspectRatio = image.height / image.width;
-    
-    const baseWidth = 280;
-    
+    const baseWidth = 300; // Base width for calculation
     let calculatedHeight;
     
-    if (aspectRatio <= 0.5) {
-        calculatedHeight = Math.max(baseWidth * aspectRatio, 160);
-    } else if (aspectRatio <= 0.75) {
+    // Create different height categories for better masonry effect
+    if (aspectRatio <= 0.6) {
+        // Wide images (landscape)
+        calculatedHeight = Math.max(baseWidth * aspectRatio, 180);
+    } else if (aspectRatio <= 1.0) {
+        // Square-ish images
         calculatedHeight = baseWidth * aspectRatio;
-    } else if (aspectRatio <= 1.33) {
-        calculatedHeight = Math.min(baseWidth * aspectRatio, 374);
-    } else if (aspectRatio <= 2) {
+    } else if (aspectRatio <= 1.5) {
+        // Tall images (portrait)
         calculatedHeight = Math.min(baseWidth * aspectRatio, 450);
     } else {
+        // Very tall images
         calculatedHeight = Math.min(baseWidth * aspectRatio, 500);
     }
     
-    calculatedHeight = Math.max(Math.round(calculatedHeight), 180);
-    
-    const rowHeight = 10;
-    const gap = 20;
-    const rowSpan = Math.ceil((calculatedHeight + gap) / rowHeight);
-    
-    imageContainer.style.gridRowEnd = `span ${rowSpan}`;
+    // Add some randomness to avoid too uniform grid (optional)
+    const randomVariation = (Math.random() - 0.5) * 20; // ±10px variation
+    calculatedHeight = Math.max(calculatedHeight + randomVariation, 150);
     
     imageContainer.innerHTML = `
-        <div class="image-wrapper ash-loading" style="height: ${calculatedHeight}px;">
+        <div class="image-wrapper" style="height: ${Math.round(calculatedHeight)}px;">
             <img 
                 src="${image.urls.small}" 
                 alt="${image.alt_description || 'Unsplash image'}"
                 loading="lazy"
                 data-index="${globalIndex}"
-                data-full-src="${image.urls.regular}"
+                data-aspect-ratio="${aspectRatio.toFixed(3)}"
                 onclick="openImageModal(${globalIndex})"
-                onload="handleImageLoad(this)"
-                onerror="handleImageError(this)"
+                onload="adjustImageHeight(this, ${aspectRatio})"
             />
-            <div class="image-overlay">
-                <div class="image-info">
-                    <span class="photographer">📸 ${image.user.name}</span>
-                    <span class="likes">❤️ ${image.likes}</span>
-                </div>
-            </div>
         </div>
     `;
     
-    console.log(`Created image element ${globalIndex} with ash-loading class`);
     return imageContainer;
 }
 
-function handleImageLoad(img) {
-    const container = img.closest('.gallery-item');
+// Adjust image height after loading (fine-tuning)
+function adjustImageHeight(img, aspectRatio) {
     const wrapper = img.parentElement;
+    const container = wrapper.parentElement;
+    const actualWidth = img.offsetWidth;
     
-    console.log('Image loaded, removing ash-loading, applying forming-image');
+    // Recalculate height based on actual rendered width
+    const idealHeight = actualWidth * aspectRatio;
     
-    container.classList.remove('image-loading');
-    container.classList.add('image-loaded');
+    // Calculate grid row span for masonry effect
+    const rowHeight = 10; // Should match CSS grid-auto-rows
+    const rowSpan = Math.ceil((idealHeight + 10) / rowHeight); // +10 for gap
     
-    wrapper.classList.remove('ash-loading');
-    wrapper.classList.add('forming-image');
+    // Apply the new height and grid positioning
+    wrapper.style.transition = 'height 0.3s ease';
+    wrapper.style.height = `${Math.round(idealHeight)}px`;
+    container.style.gridRowEnd = `span ${rowSpan}`;
     
-    img.classList.add('loaded');
-    wrapper.classList.add('loaded');
-    
-    // Remove forming-image class after ashDissolve animation (1.2s)
+    // Remove transition after animation
     setTimeout(() => {
-        wrapper.classList.remove('forming-image');
-        console.log('Removed forming-image class after animation');
-    }, 1200);
+        wrapper.style.transition = '';
+    }, 300);
 }
 
-function handleImageError(img) {
-    const container = img.closest('.gallery-item');
-    const wrapper = img.parentElement;
+// Enhanced display function with better masonry positioning
+function displayImages(images, clearExisting = false) {
+    const gallery = getOrCreateGallery();
     
-    console.log('Image error occurred');
+    if (clearExisting) {
+        gallery.innerHTML = '';
+    }
     
-    container.classList.add('image-error');
-    wrapper.classList.remove('ash-loading', 'forming-image');
-    
-    img.src = 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjAwIiBoZWlnaHQ9IjIwMCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48cmVjdCB3aWR0aD0iMjAwIiBoZWlnaHQ9IjIwMCIgZmlsbD0iI2Y1ZjVmNSIvPjx0ZXh0IHg9IjUwJSIgeT0iNTAlIiBkb21pbmFudC1iYXNlbGluZT0iY2VudHJhbCIgdGV4dC1hbmNob3I9Im1pZGRsZSIgZmlsbD0iIzk5OTk5OSIgZm9udC1mYW1pbHk9Im1vbm9zcGFjZSIgZm9udC1zaXplPSIxNHB4Ij5JbWFnZSBub3QgZm91bmQ8L3RleHQ+PC9zdmc+';
-    img.alt = 'Image failed to load';
-}
-
-function setupImageObserver(imageElement) {
-    const observer = new IntersectionObserver((entries) => {
-        entries.forEach(entry => {
-            const img = entry.target.querySelector('img');
-            
-            if (entry.isIntersecting) {
-                entry.target.classList.add('in-viewport');
-                
-                const highResSrc = img.getAttribute('data-full-src');
-                if (highResSrc && !img.classList.contains('high-res-loaded')) {
-                    const highResImg = new Image();
-                    highResImg.onload = () => {
-                        img.src = highResSrc;
-                        img.classList.add('high-res-loaded');
-                        console.log('High-res image loaded');
-                    };
-                    highResImg.src = highResSrc;
-                }
-            } else {
-                entry.target.classList.remove('in-viewport');
+    images.forEach((image, index) => {
+        const imageElement = createImageElement(image, currentImages.length - images.length + index);
+        gallery.appendChild(imageElement);
+        
+        // Pre-calculate grid position for better layout
+        setTimeout(() => {
+            const img = imageElement.querySelector('img');
+            if (img.complete) {
+                adjustImageHeight(img, image.height / image.width);
             }
-        });
-    }, {
-        threshold: 0.1,
-        rootMargin: '100px'
+        }, 100);
     });
-    
-    observer.observe(imageElement);
 }
 
+// Open image modal with full functionality
 function openImageModal(imageIndex) {
     currentImageIndex = imageIndex;
     const image = currentImages[imageIndex];
     
     if (!image) return;
     
+    // Create modal
     const modal = document.createElement('div');
     modal.className = 'image-modal';
     modal.innerHTML = `
@@ -499,6 +373,7 @@ function openImageModal(imageIndex) {
                 <button class="scroll-down-btn" onclick="toggleSimilarImages()">⬇️ Similar Images</button>
                 <div class="similar-images-container" id="similar-images-container">
                     <div class="similar-images-scroll">
+                        <!-- Similar images will be loaded here -->
                     </div>
                 </div>
             </div>
@@ -508,13 +383,16 @@ function openImageModal(imageIndex) {
     document.body.appendChild(modal);
     document.body.style.overflow = 'hidden';
     
+    // Load similar images
     loadSimilarImages(image.id);
     
+    // Add water blur transition class
     setTimeout(() => {
         modal.classList.add('modal-active');
     }, 10);
 }
 
+// Navigate between images with water blur effect
 function navigateImage(direction) {
     const newIndex = currentImageIndex + direction;
     
@@ -523,23 +401,29 @@ function navigateImage(direction) {
     const modalImage = document.getElementById('modal-image');
     const metadataPanel = document.getElementById('metadata-panel');
     
+    // Apply water blur effect
     modalImage.classList.add('water-blur-transition');
     
     setTimeout(() => {
         currentImageIndex = newIndex;
         const newImage = currentImages[currentImageIndex];
         
+        // Update image
         modalImage.src = newImage.urls.regular;
         modalImage.alt = newImage.alt_description || 'Unsplash image';
         
+        // Update metadata
         updateMetadata(newImage);
         
+        // Remove blur effect
         modalImage.classList.remove('water-blur-transition');
         
+        // Load new similar images
         loadSimilarImages(newImage.id);
     }, 300);
 }
 
+// Update metadata panel
 function updateMetadata(image) {
     const metadataContent = document.querySelector('.metadata-content');
     if (metadataContent) {
@@ -562,6 +446,7 @@ function updateMetadata(image) {
     }
 }
 
+// Load similar images
 async function loadSimilarImages(imageId) {
     try {
         const response = await fetch(
@@ -573,34 +458,125 @@ async function loadSimilarImages(imageId) {
             }
         );
         
-        if (!response.ok) {
-            throw new Error(`HTTP error! status: ${response.status}`);
+        if (response.ok) {
+            const similarImages = await response.json();
+            displaySimilarImages(similarImages.results || similarImages);
         }
-        
-        const data = await response.json();
-        const similarImagesContainer = document.getElementById('similar-images-container');
-        const similarImagesScroll = similarImagesContainer.querySelector('.similar-images-scroll');
-        
-        similarImagesScroll.innerHTML = data.results.map((image, index) => `
-            <div class="similar-image-item" onclick="openImageModal(${currentImages.length + index})">
-                <img src="${image.urls.thumb}" alt="${image.alt_description || 'Related image'}" loading="lazy"/>
-            </div>
-        `).join('');
-        
-        data.results.forEach(image => {
-            if (!currentImages.some(img => img.id === image.id)) {
-                currentImages.push(image);
-            }
-        });
-        
     } catch (error) {
-        console.error('Error fetching similar images:', error);
+        console.error('Error loading similar images:', error);
     }
 }
 
-function toggleSimilarImages() {
-    const similarSection = document.querySelector('.similar-images-section');
-    similarSection.classList.toggle('similar-visible');
+// Display similar images in horizontal scroll
+function displaySimilarImages(images) {
+    const container = document.querySelector('.similar-images-scroll');
+    if (!container || !images) return;
+    
+    container.innerHTML = images.map((image, index) => `
+        <div class="similar-image-item" onclick="selectSimilarImage(${index})">
+            <img src="${image.urls.thumb}" alt="${image.alt_description || 'Similar image'}" />
+        </div>
+    `).join('');
+    
+    // Store similar images for selection
+    window.currentSimilarImages = images;
+}
+
+// Select similar image with innovative transition
+function selectSimilarImage(index) {
+    if (!window.currentSimilarImages) return;
+    
+    const selectedImage = window.currentSimilarImages[index];
+    const similarImageElement = document.querySelectorAll('.similar-image-item')[index];
+    
+    // Create transition overlay
+    const transitionOverlay = document.createElement('div');
+    transitionOverlay.className = 'image-transition-overlay';
+    
+    // Get position of clicked similar image
+    const rect = similarImageElement.getBoundingClientRect();
+    const clonedImg = similarImageElement.querySelector('img').cloneNode(true);
+    
+    transitionOverlay.innerHTML = `
+        <div class="transition-image" style="
+            position: fixed;
+            left: ${rect.left}px;
+            top: ${rect.top}px;
+            width: ${rect.width}px;
+            height: ${rect.height}px;
+            z-index: 10002;
+            border-radius: 8px;
+            overflow: hidden;
+            transition: all 0.8s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+        ">
+            <img src="${selectedImage.urls.small}" style="width: 100%; height: 100%; object-fit: cover;" />
+        </div>
+    `;
+    
+    document.body.appendChild(transitionOverlay);
+    
+    // Animate to center
+    setTimeout(() => {
+        const transitionImg = transitionOverlay.querySelector('.transition-image');
+        const modalImage = document.getElementById('modal-image');
+        const modalRect = modalImage.getBoundingClientRect();
+        
+        // Scale and move to center with floating effect
+        transitionImg.style.left = `${modalRect.left}px`;
+        transitionImg.style.top = `${modalRect.top}px`;
+        transitionImg.style.width = `${modalRect.width}px`;
+        transitionImg.style.height = `${modalRect.height}px`;
+        transitionImg.style.transform = 'scale(1.05) translateY(-10px)';
+        transitionImg.style.boxShadow = '0 20px 60px rgba(0,0,0,0.4)';
+        transitionImg.style.filter = 'brightness(1.1)';
+        
+        // Add floating animation
+        setTimeout(() => {
+            transitionImg.style.transform = 'scale(1) translateY(0px)';
+            transitionImg.style.filter = 'brightness(1)';
+        }, 400);
+    }, 50);
+    
+    // Update main image after transition
+    setTimeout(() => {
+        // Find this image in current images or add it
+        let imageIndex = currentImages.findIndex(img => img.id === selectedImage.id);
+        
+        if (imageIndex === -1) {
+            currentImages.push(selectedImage);
+            imageIndex = currentImages.length - 1;
+        }
+        
+        currentImageIndex = imageIndex;
+        
+        // Update the main modal image
+        const modalImage = document.getElementById('modal-image');
+        modalImage.src = selectedImage.urls.regular;
+        modalImage.alt = selectedImage.alt_description || 'Unsplash image';
+        
+        updateMetadata(selectedImage);
+        loadSimilarImages(selectedImage.id);
+        
+        // Remove transition overlay
+        transitionOverlay.remove();
+    }, 800);
+}
+
+// Modal control functions
+function closeImageModal() {
+    const modal = document.querySelector('.image-modal');
+    if (modal) {
+        modal.classList.add('modal-closing');
+        setTimeout(() => {
+            modal.remove();
+            document.body.style.overflow = 'auto';
+        }, 300);
+    }
+}
+
+function toggleEnlarge() {
+    const modalImage = document.getElementById('modal-image');
+    modalImage.classList.toggle('enlarged');
 }
 
 function toggleMetadata() {
@@ -611,172 +587,200 @@ function toggleMetadata() {
     imageContainer.classList.toggle('with-metadata');
 }
 
-function toggleEnlarge() {
-    const modalImage = document.getElementById('modal-image');
-    modalImage.classList.toggle('enlarged');
-}
-
-function closeImageModal() {
-    const modal = document.querySelector('.image-modal');
-    if (!modal) return;
+function toggleSimilarImages() {
+    const container = document.getElementById('similar-images-container');
+    const button = document.querySelector('.scroll-down-btn');
     
-    modal.classList.add('modal-closing');
-    
-    setTimeout(() => {
-        modal.remove();
-        document.body.style.overflow = '';
-    }, 300);
+    container.classList.toggle('similar-visible');
+    button.textContent = container.classList.contains('similar-visible') 
+        ? '⬆️ Hide Similar Images' 
+        : '⬇️ Similar Images';
 }
 
 function saveToCollection() {
-    const notification = document.createElement('div');
-    notification.className = 'save-notification';
-    notification.innerHTML = `
-        <div class="notification-content">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                <path d="M5 13l4 4L19 7"/>
-            </svg>
-            <p>Image saved to collection!</p>
-        </div>
-    `;
-    
-    document.body.appendChild(notification);
-    
-    setTimeout(() => {
-        notification.classList.add('notification-show');
-    }, 10);
-    
-    setTimeout(() => {
-        notification.classList.remove('notification-show');
+    // Show collection selection modal or implement save functionality
+    const currentImage = currentImages[currentImageIndex];
+    if (currentImage) {
+        // Create temporary notification
+        const notification = document.createElement('div');
+        notification.className = 'save-notification';
+        notification.innerHTML = `
+            <div class="notification-content">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"/>
+                </svg>
+                <p>Image saved to collection!</p>
+            </div>
+        `;
+        
+        document.body.appendChild(notification);
+        
         setTimeout(() => {
-            notification.remove();
-        }, 400);
-    }, 2000);
+            notification.classList.add('notification-show');
+        }, 100);
+        
+        setTimeout(() => {
+            notification.classList.remove('notification-show');
+            setTimeout(() => notification.remove(), 300);
+        }, 2000);
+        
+        console.log('Save to collection:', currentImage.id);
+        // Implement your collection save logic here
+    }
 }
 
 function downloadCurrentImage() {
-    const image = currentImages[currentImageIndex];
-    if (!image) return;
-    
-    window.open(image.links.download, '_blank');
-}
-
-function showLoadMoreButton() {
-    let loadMoreButton = document.querySelector('.load-more-btn');
-    
-    if (!loadMoreButton) {
-        loadMoreButton = document.createElement('button');
-        loadMoreButton.className = 'load-more-btn';
-        loadMoreButton.innerHTML = 'Load More';
-        loadMoreButton.addEventListener('click', () => {
-            currentPage++;
-            loadMoreButton.classList.add('loading');
-            loadMoreButton.innerHTML = `
-                <span>Loading</span>
-                <span class="button-spinner"></span>
-            `;
-            searchImages(currentQuery, currentPage);
-        });
-        
-        gallerySection.appendChild(loadMoreButton);
+    const currentImage = currentImages[currentImageIndex];
+    if (currentImage) {
+        const link = document.createElement('a');
+        link.href = currentImage.urls.full;
+        link.download = `unsplash-${currentImage.id}.jpg`;
+        link.click();
     }
 }
 
-function hideLoadMoreButton() {
-    const loadMoreButton = document.querySelector('.load-more-btn');
-    if (loadMoreButton) {
-        loadMoreButton.remove();
-    }
-}
-
-function handleScroll() {
-    const loadMoreButton = document.querySelector('.load-more-btn');
-    if (!loadMoreButton || isLoading) return;
-    
-    const rect = loadMoreButton.getBoundingClientRect();
-    if (rect.top <= window.innerHeight && rect.bottom >= 0) {
-        loadMoreButton.click();
-    }
-}
-
-function handleKeyboard(event) {
-    if (!document.querySelector('.image-modal')) return;
-    
-    switch (event.key) {
-        case 'ArrowLeft':
-            navigateImage(-1);
-            break;
-        case 'ArrowRight':
-            navigateImage(1);
-            break;
-        case 'Escape':
-            closeImageModal();
-            break;
-    }
-}
-
-function showError(message) {
-    clearGallery();
-    
-    const errorDiv = document.createElement('div');
-    errorDiv.className = 'error-message';
-    errorDiv.innerHTML = `
-        <div class="error-content">
-            <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                <path d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z"/>
-            </svg>
-            <h3>Error</h3>
-            <p>${message}</p>
-            <button class="retry-btn" onclick="performSearch(currentQuery || 'featured')">Retry</button>
-        </div>
-    `;
-    
-    gallerySection.appendChild(errorDiv);
-}
-
-function showNoResults(query) {
-    clearGallery();
-    
-    const noResultsDiv = document.createElement('div');
-    noResultsDiv.className = 'no-results';
-    noResultsDiv.innerHTML = `
-        <div class="no-results-content">
-            <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                <path d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
-            </svg>
-            <h3>No Results Found</h3>
-            <p>No images found for "${query}". Try a different search term.</p>
-            <div class="suggestion-chips">
-                <button class="chip" onclick="performSearch('nature')">Nature</button>
-                <button class="chip" onclick="performSearch('city')">City</button>
-                <button class="chip" onclick="performSearch('abstract')">Abstract</button>
-                <button class="chip" onclick="performSearch('landscape')">Landscape</button>
-            </div>
-        </div>
-    `;
-    
-    gallerySection.appendChild(noResultsDiv);
-}
-
-function clearGallery() {
-    const gallery = getOrCreateGallery();
-    gallery.innerHTML = '';
-    
-    const resultsHeader = document.querySelector('.search-results-header');
-    if (resultsHeader) {
-        resultsHeader.remove();
-    }
-    
-    hideLoadMoreButton();
-}
-
+// Utility functions
 function getOrCreateGallery() {
-    let gallery = document.querySelector('.gallery');
+    let gallery = document.querySelector('.gallery-grid');
+    
     if (!gallery) {
-        gallery = document.createElement('section');
-        gallery.className = 'gallery';
-        document.querySelector('main').appendChild(gallery);
+        gallery = document.createElement('div');
+        gallery.className = 'gallery-grid';
+        gallerySection.appendChild(gallery);
     }
+    
     return gallery;
 }
 
+function clearGallery() {
+    const gallery = document.querySelector('.gallery-grid');
+    const header = document.querySelector('.search-results-header');
+    
+    if (gallery) gallery.innerHTML = '';
+    if (header) header.remove();
+}
+
+function showLoading() {
+    const gallery = getOrCreateGallery();
+    
+    const existingLoader = document.querySelector('.loading-indicator');
+    if (existingLoader) existingLoader.remove();
+    
+    const loader = document.createElement('div');
+    loader.className = 'loading-indicator';
+    loader.innerHTML = `
+        <div class="spinner"></div>
+        <p>Loading images...</p>
+    `;
+    
+    gallery.appendChild(loader);
+}
+
+function hideLoading() {
+    const loader = document.querySelector('.loading-indicator');
+    if (loader) loader.remove();
+}
+
+function showError(message) {
+    const gallery = getOrCreateGallery();
+    
+    const errorElement = document.createElement('div');
+    errorElement.className = 'error-message';
+    errorElement.innerHTML = `
+        <p>❌ ${message}</p>
+        <button onclick="location.reload()">Try Again</button>
+    `;
+    
+    gallery.appendChild(errorElement);
+}
+
+function showNoResults(query) {
+    const gallery = getOrCreateGallery();
+    
+    const noResultsElement = document.createElement('div');
+    noResultsElement.className = 'no-results';
+    noResultsElement.innerHTML = `
+        <h3>No images found for "${query}"</h3>
+        <p>Try searching for something else!</p>
+    `;
+    
+    gallery.appendChild(noResultsElement);
+}
+
+// Load more functionality
+function showLoadMoreButton() {
+    let loadMoreBtn = document.querySelector('.load-more-btn');
+    
+    if (!loadMoreBtn) {
+        loadMoreBtn = document.createElement('button');
+        loadMoreBtn.className = 'load-more-btn';
+        loadMoreBtn.textContent = 'Load More Images';
+        loadMoreBtn.onclick = loadMoreImages;
+        gallerySection.parentNode.appendChild(loadMoreBtn);
+    }
+    
+    loadMoreBtn.style.display = 'block';
+}
+
+function hideLoadMoreButton() {
+    const loadMoreBtn = document.querySelector('.load-more-btn');
+    if (loadMoreBtn) loadMoreBtn.style.display = 'none';
+}
+
+function loadMoreImages() {
+    if (currentQuery && !isLoading) {
+        currentPage++;
+        searchImages(currentQuery, currentPage);
+    }
+}
+
+// Infinite scroll
+function handleScroll() {
+    if (isLoading) return;
+    
+    const scrollPosition = window.innerHeight + window.scrollY;
+    const documentHeight = document.documentElement.offsetHeight;
+    
+    if (scrollPosition >= documentHeight - 1000) {
+        loadMoreImages();
+    }
+}
+
+// Keyboard shortcuts
+function handleKeyboard(event) {
+    const modal = document.querySelector('.image-modal');
+    
+    if (modal) {
+        switch(event.key) {
+            case 'Escape':
+                closeImageModal();
+                break;
+            case 'ArrowLeft':
+                navigateImage(-1);
+                break;
+            case 'ArrowRight':
+                navigateImage(1);
+                break;
+            case 'f':
+            case 'F':
+                toggleEnlarge();
+                break;
+            case 'm':
+            case 'M':
+                toggleMetadata();
+                break;
+            case 's':
+            case 'S':
+                if (event.ctrlKey) {
+                    event.preventDefault();
+                    downloadCurrentImage();
+                }
+                break;
+        }
+    } else {
+        if (event.key === '/' && event.target.tagName !== 'INPUT') {
+            event.preventDefault();
+            searchInput.focus();
+        }
+    }
+}
