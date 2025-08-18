@@ -5,6 +5,7 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <link rel="stylesheet" href="/css/styles.css" />
+    <link rel="icon" href="logo.png" type="image/x-icon" />
 
     <title>Arceus Gallery</title>
 </head>
@@ -31,7 +32,7 @@
             <nav class="nav-links" aria-label="Primary Navigation">
                 <ul>
                     <li><button type="button">Home</button></li>
-                    <li><button type="button">Collections</button></li>
+                    <li><button type="button" class="collection-btn" id="collection-btn">Collections</button></li>
                     <li><button type="button">Sign Up</button></li>
                     <li><button type="button">Log In</button></li>
                 </ul>
@@ -77,11 +78,11 @@
         <section class="gallery">
             <!-- Gallery images will be loaded here -->
         </section>
-        <div id="lightbox" class="lightbox" hidden>
+        <!-- <div id="lightbox" class="lightbox" hidden>
             <button id="close-lightbox" aria-label="Close">&times;</button>
             <img id="lightbox-img" alt="" />
             <p id="lightbox-caption"></p>
-        </div>
+        </div> -->
     </main>
     <footer>
         <section class="footer-content">
@@ -95,6 +96,6 @@
             </nav>
         </section>
     </footer>
-    <script src="/js/gallery.js"></script>
+    <script src="/js/main.js"></script>
 </body>
 </html>
