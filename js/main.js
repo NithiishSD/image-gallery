@@ -10,7 +10,7 @@ const gallerySection = document.querySelector('.gallery');
 const suggestionButtons = document.querySelectorAll('.suggestion-button');
 const themeSuggestions = document.querySelectorAll('.theme-suggestions span[data-query]');
 
-// State management
+// Global management
 let currentPage = 1;
 let currentQuery = '';
 let currentImages = [];
@@ -49,68 +49,10 @@ document.addEventListener('DOMContentLoaded', function() {
     // Add keyboard shortcuts
     document.addEventListener('keydown', handleKeyboard);
     
-    // Add search input focus and suggestion functionality
-    setupSearchSuggestions();
+    
+    //setupSearchSuggestions();
 });
 
-// Setup search suggestions functionality
-function setupSearchSuggestions() {
-    if (!searchInput) return;
-    
-    const suggestionsContainer = document.createElement('div');
-    suggestionsContainer.className = 'search-suggestions';
-    suggestionsContainer.style.display = 'none';
-    searchInput.parentNode.appendChild(suggestionsContainer);
-    
-    const commonSearches = [
-        'nature', 'landscape', 'city', 'mountains', 'ocean', 'forest', 'sunset', 
-        'architecture', 'travel', 'animals', 'flowers', 'abstract', 'minimal',
-        'technology', 'food', 'coffee', 'workspace', 'business', 'people'
-    ];
-    
-    searchInput.addEventListener('focus', () => {
-        if (searchInput.value.trim() === '') {
-            showSuggestions(commonSearches, suggestionsContainer);
-        }
-    });
-    
-    searchInput.addEventListener('input', (e) => {
-        const value = e.target.value.trim();
-        if (value.length > 0) {
-            const filtered = commonSearches.filter(term => 
-                term.toLowerCase().includes(value.toLowerCase())
-            );
-            showSuggestions(filtered.slice(0, 6), suggestionsContainer);
-        } else {
-            showSuggestions(commonSearches, suggestionsContainer);
-        }
-    });
-    
-    searchInput.addEventListener('blur', (e) => {
-        // Delay hiding to allow click on suggestions
-        setTimeout(() => {
-            suggestionsContainer.style.display = 'none';
-        }, 200);
-    });
-}
-
-function showSuggestions(suggestions, container) {
-    if (suggestions.length === 0) {
-        container.style.display = 'none';
-        return;
-    }
-    
-    container.innerHTML = suggestions.map(suggestion => 
-        `<div class="suggestion-item" onclick="selectSuggestion('${suggestion}')">${suggestion}</div>`
-    ).join('');
-    container.style.display = 'block';
-}
-
-function selectSuggestion(suggestion) {
-    searchInput.value = suggestion;
-    performSearch(suggestion);
-    document.querySelector('.search-suggestions').style.display = 'none';
-}
 
 // Handle search form submission
 function handleSearch(event) {
@@ -130,8 +72,8 @@ function performSearch(query) {
     searchInput.value = query;
     
     // Hide suggestions
-    const suggestions = document.querySelector('.search-suggestions');
-    if (suggestions) suggestions.style.display = 'none';
+    // const suggestions = document.querySelector('.search-suggestions');
+    // if (suggestions) suggestions.style.display = 'none';
     
     // Clear existing gallery
     clearGallery();
@@ -143,11 +85,10 @@ function performSearch(query) {
             block: 'start'
         });
     }, 100);
+
+
     // Show skeleton loading
     showSkeletonGrid();
-    
-    
-    
     // Search for images
     searchImages(query, currentPage);
 }
@@ -179,11 +120,11 @@ function showSkeletonGrid() {
         // Add staggered animation delay
         setTimeout(() => {
             skeletonItem.classList.add('skeleton-animate');
-        }, i * 1000);
+        }, i * 100);
     }
 }
 
-// Search images from Unsplash
+// Search and gety  images from Unsplash
 async function searchImages(query, page = 1) {
     if (isLoading) return;
     
@@ -237,11 +178,12 @@ async function loadFeaturedImages() {
     if (isLoading) return;
     
     isLoading = true;
+    showSearchResults('Featured', 30);
     showSkeletonGrid();
     
     try {
         const response = await fetch(
-            `${UNSPLASH_API_URL}/photos?page=1&per_page=30&order_by=popular`,
+            `${UNSPLASH_API_URL}/photos?page=1&per_page=30&order_by=latest`,
             {
                 headers: {
                     'Authorization': `Client-ID ${UNSPLASH_ACCESS_KEY}`
@@ -536,7 +478,7 @@ function openImageModal(imageIndex) {
     `;
     
     document.body.appendChild(modal);
-    document.body.style.overflow = 'hidden';
+    document.body.style.overflow = 'hidden';//to temporarily disable scrolling
     
     // Load similar images
     loadSimilarImages(image.id);
@@ -695,7 +637,7 @@ function selectSimilarImage(index) {
         // Add floating animation
         setTimeout(() => {
             transitionImg.style.transform = 'scale(1) translateY(0px)';
-            transitionImg.style.filter = 'brightness(1)';
+            transitionImg.style.filter = 'brightness(2)';
         }, 400);
     }, 50);
     
@@ -761,6 +703,206 @@ function toggleSimilarImages() {
         ? '⬆️ Hide Similar Images' 
         : '⬇️ Similar Images';
 }
+
+
+// Utility functions
+function getOrCreateGallery() {
+    let gallery = document.querySelector('.gallery-grid');
+    
+    if (!gallery) {
+        gallery = document.createElement('div');
+        gallery.className = 'gallery-grid';
+        gallerySection.appendChild(gallery);
+    }
+    
+    return gallery;
+}
+
+function clearGallery() {
+    const gallery = document.querySelector('.gallery-grid');
+    const header = document.querySelector('.search-results-header');
+    
+    if (gallery) gallery.innerHTML = '';
+    if (header) header.remove();
+}
+
+function showError(message) {
+    const gallery = getOrCreateGallery();
+    gallery.innerHTML = '';
+    
+    const errorElement = document.createElement('div');
+    errorElement.className = 'error-message';
+    errorElement.innerHTML = `
+        <div class="error-content">
+            <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <circle cx="12" cy="12" r="10"/>
+                <line x1="15" y1="9" x2="9" y2="15"/>
+                <line x1="9" y1="9" x2="15" y2="15"/>
+            </svg>
+            <h3>Oops! Something went wrong</h3>
+            <p>${message}</p>
+            <button onclick="location.reload()" class="retry-btn">Try Again</button>
+        </div>
+    `;
+    
+    gallery.appendChild(errorElement);
+}
+
+function showNoResults(query) {
+    const gallery = getOrCreateGallery();
+    gallery.innerHTML = '';
+    
+    const noResultsElement = document.createElement('div');
+    noResultsElement.className = 'no-results';
+    noResultsElement.innerHTML = `
+        <div class="no-results-content">
+            <svg width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+                <circle cx="11" cy="11" r="8"/>
+                <path d="m21 21-4.35-4.35"/>
+                <line x1="11" y1="8" x2="11" y2="14"/>
+                <line x1="8" y1="11" x2="14" y2="11"/>
+            </svg>
+            <h3>No images found for "${query}"</h3>
+            <p>Try searching for something else or check your spelling!</p>
+            <div class="suggested-searches">
+                <p>Try these popular searches:</p>
+                <div class="suggestion-chips">
+                    <span class="chip" onclick="performSearch('nature')">nature</span>
+                    <span class="chip" onclick="performSearch('landscape')">landscape</span>
+                    <span class="chip" onclick="performSearch('city')">city</span>
+                    <span class="chip" onclick="performSearch('abstract')">abstract</span>
+                </div>
+            </div>
+        </div>
+    `;
+    
+    gallery.appendChild(noResultsElement);
+}
+
+// Load more functionality
+function showLoadMoreButton() {
+    let loadMoreBtn = document.querySelector('.load-more-btn');
+    
+    if (!loadMoreBtn) {
+        loadMoreBtn = document.createElement('button');
+        loadMoreBtn.className = 'load-more-btn';
+        loadMoreBtn.innerHTML = `
+            <span>Load More Images</span>
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <polyline points="6,9 12,15 18,9"/>
+            </svg>
+        `;
+        loadMoreBtn.onclick = loadMoreImages;
+        gallerySection.parentNode.appendChild(loadMoreBtn);
+    }
+    
+    loadMoreBtn.style.display = 'block';
+}
+
+function hideLoadMoreButton() {
+    const loadMoreBtn = document.querySelector('.load-more-btn');
+    if (loadMoreBtn) loadMoreBtn.style.display = 'none';
+}
+
+function loadMoreImages() {
+    if (currentQuery && !isLoading) {
+        currentPage++;
+        
+        // Show loading state on button
+        const loadMoreBtn = document.querySelector('.load-more-btn');
+        if (loadMoreBtn) {
+            loadMoreBtn.classList.add('loading');
+            loadMoreBtn.innerHTML = `
+                <span>Loading...</span>
+                <div class="button-spinner"></div>
+            `;
+        }
+        
+        searchImages(currentQuery, currentPage).finally(() => {
+            if (loadMoreBtn) {
+                loadMoreBtn.classList.remove('loading');
+                loadMoreBtn.innerHTML = `
+                    <span>Load More Images</span>
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <polyline points="6,9 12,15 18,9"/>
+                    </svg>
+                `;
+            }
+        });
+    }
+}
+
+// Infinite scroll
+function handleScroll() {
+    if (isLoading) return;
+    
+    const scrollPosition = window.innerHeight + window.scrollY;
+    const documentHeight = document.documentElement.offsetHeight;
+    
+    if (scrollPosition >= documentHeight - 1000) {
+        loadMoreImages();
+    }
+}
+
+// Keyboard shortcuts
+function handleKeyboard(event) {
+    const modal = document.querySelector('.image-modal');
+    
+    if (modal) {
+        switch(event.key) {
+            case 'Escape':
+                closeImageModal();
+                break;
+            case 'ArrowLeft':
+                navigateImage(-1);
+                break;
+            case 'ArrowRight':
+                navigateImage(1);
+                break;
+            case 'f':
+            case 'F':
+                toggleEnlarge();
+                break;
+            case 'm':
+            case 'M':
+                toggleMetadata();
+                break;
+            case 's':
+            case 'S':
+                if (event.ctrlKey) {
+                    event.preventDefault();
+                    downloadCurrentImage();
+                }
+                break;
+        }
+    } else {
+        if (event.key === '/' && event.target.tagName !== 'INPUT') {
+            event.preventDefault();
+            searchInput.focus();
+        }
+    }
+        notification.classList.add('notification-show');
+        
+        
+        setTimeout(() => {
+            notification.classList.remove('notification-show');
+            setTimeout(() => notification.remove(), 300);
+        }, 2000);
+    }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
@@ -1282,189 +1424,4 @@ function downloadCurrentImage() {
         link.click();
     }
 }
-
-// Utility functions
-function getOrCreateGallery() {
-    let gallery = document.querySelector('.gallery-grid');
-    
-    if (!gallery) {
-        gallery = document.createElement('div');
-        gallery.className = 'gallery-grid';
-        gallerySection.appendChild(gallery);
-    }
-    
-    return gallery;
-}
-
-function clearGallery() {
-    const gallery = document.querySelector('.gallery-grid');
-    const header = document.querySelector('.search-results-header');
-    
-    if (gallery) gallery.innerHTML = '';
-    if (header) header.remove();
-}
-
-function showError(message) {
-    const gallery = getOrCreateGallery();
-    gallery.innerHTML = '';
-    
-    const errorElement = document.createElement('div');
-    errorElement.className = 'error-message';
-    errorElement.innerHTML = `
-        <div class="error-content">
-            <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                <circle cx="12" cy="12" r="10"/>
-                <line x1="15" y1="9" x2="9" y2="15"/>
-                <line x1="9" y1="9" x2="15" y2="15"/>
-            </svg>
-            <h3>Oops! Something went wrong</h3>
-            <p>${message}</p>
-            <button onclick="location.reload()" class="retry-btn">Try Again</button>
-        </div>
-    `;
-    
-    gallery.appendChild(errorElement);
-}
-
-function showNoResults(query) {
-    const gallery = getOrCreateGallery();
-    gallery.innerHTML = '';
-    
-    const noResultsElement = document.createElement('div');
-    noResultsElement.className = 'no-results';
-    noResultsElement.innerHTML = `
-        <div class="no-results-content">
-            <svg width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
-                <circle cx="11" cy="11" r="8"/>
-                <path d="m21 21-4.35-4.35"/>
-                <line x1="11" y1="8" x2="11" y2="14"/>
-                <line x1="8" y1="11" x2="14" y2="11"/>
-            </svg>
-            <h3>No images found for "${query}"</h3>
-            <p>Try searching for something else or check your spelling!</p>
-            <div class="suggested-searches">
-                <p>Try these popular searches:</p>
-                <div class="suggestion-chips">
-                    <span class="chip" onclick="performSearch('nature')">nature</span>
-                    <span class="chip" onclick="performSearch('landscape')">landscape</span>
-                    <span class="chip" onclick="performSearch('city')">city</span>
-                    <span class="chip" onclick="performSearch('abstract')">abstract</span>
-                </div>
-            </div>
-        </div>
-    `;
-    
-    gallery.appendChild(noResultsElement);
-}
-
-// Load more functionality
-function showLoadMoreButton() {
-    let loadMoreBtn = document.querySelector('.load-more-btn');
-    
-    if (!loadMoreBtn) {
-        loadMoreBtn = document.createElement('button');
-        loadMoreBtn.className = 'load-more-btn';
-        loadMoreBtn.innerHTML = `
-            <span>Load More Images</span>
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                <polyline points="6,9 12,15 18,9"/>
-            </svg>
-        `;
-        loadMoreBtn.onclick = loadMoreImages;
-        gallerySection.parentNode.appendChild(loadMoreBtn);
-    }
-    
-    loadMoreBtn.style.display = 'block';
-}
-
-function hideLoadMoreButton() {
-    const loadMoreBtn = document.querySelector('.load-more-btn');
-    if (loadMoreBtn) loadMoreBtn.style.display = 'none';
-}
-
-function loadMoreImages() {
-    if (currentQuery && !isLoading) {
-        currentPage++;
-        
-        // Show loading state on button
-        const loadMoreBtn = document.querySelector('.load-more-btn');
-        if (loadMoreBtn) {
-            loadMoreBtn.classList.add('loading');
-            loadMoreBtn.innerHTML = `
-                <span>Loading...</span>
-                <div class="button-spinner"></div>
-            `;
-        }
-        
-        searchImages(currentQuery, currentPage).finally(() => {
-            if (loadMoreBtn) {
-                loadMoreBtn.classList.remove('loading');
-                loadMoreBtn.innerHTML = `
-                    <span>Load More Images</span>
-                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                        <polyline points="6,9 12,15 18,9"/>
-                    </svg>
-                `;
-            }
-        });
-    }
-}
-
-// Infinite scroll
-function handleScroll() {
-    if (isLoading) return;
-    
-    const scrollPosition = window.innerHeight + window.scrollY;
-    const documentHeight = document.documentElement.offsetHeight;
-    
-    if (scrollPosition >= documentHeight - 1000) {
-        loadMoreImages();
-    }
-}
-
-// Keyboard shortcuts
-function handleKeyboard(event) {
-    const modal = document.querySelector('.image-modal');
-    
-    if (modal) {
-        switch(event.key) {
-            case 'Escape':
-                closeImageModal();
-                break;
-            case 'ArrowLeft':
-                navigateImage(-1);
-                break;
-            case 'ArrowRight':
-                navigateImage(1);
-                break;
-            case 'f':
-            case 'F':
-                toggleEnlarge();
-                break;
-            case 'm':
-            case 'M':
-                toggleMetadata();
-                break;
-            case 's':
-            case 'S':
-                if (event.ctrlKey) {
-                    event.preventDefault();
-                    downloadCurrentImage();
-                }
-                break;
-        }
-    } else {
-        if (event.key === '/' && event.target.tagName !== 'INPUT') {
-            event.preventDefault();
-            searchInput.focus();
-        }
-    }
-        notification.classList.add('notification-show');
-        
-        
-        setTimeout(() => {
-            notification.classList.remove('notification-show');
-            setTimeout(() => notification.remove(), 300);
-        }, 2000);
-    }
 
